@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Rifa Numismática</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; padding: 16px; }
+    h1 { color: darkblue; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 5px;
+      max-width: 420px;
+      margin: 12px auto;
+    }
+    .ticket {
+      padding: 12px;
+      border: 1px solid #333;
+      border-radius: 8px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .taken { background-color: #f44336; color: white; cursor: not-allowed; }
+    .free { background-color: #4CAF50; color: white; }
+    .selected { background-color: #2196F3; color: white; }
+    #reservarBtn { display: none; margin-top: 12px; padding: 10px 18px; background: darkblue; color: white; border-radius: 6px; border: none; cursor: pointer; }
+    #formulario { display: none; margin: 14px auto; padding: 12px; border: 1px solid #ccc; background:#fafafa; width:320px; border-radius:8px; text-align:left; }
+    label { font-weight:600; }
+    input[type="text"] { width:100%; padding:6px; margin-top:6px; box-sizing:border-box; }
+    button[type="submit"] { margin-top:10px; padding:8px 12px; }
+  </style>
+</head>
+<body>
+  <h1>🎟️ Rifa Numismática</h1>
+  <p>Selecciona tus boletos (00–99)</p>
+
+  <div class="grid" id="boletos"></div>
+
+  <button id="reservarBtn">Reservar Seleccionados</button>
+
+  <div id="formulario">
+    <form id="reservaForm">
+      <p><strong>Boletos seleccionados:</strong></p>
+      <div id="listaBoletos" style="margin-bottom:8px;"></div>
+      <input type="hidden" id="boletosSeleccionados" />
+      <label>Nombre:</label>
+      <input type="text" id="nombre" required />
+      <label style="margin-top:8px; display:block;">Teléfono:</label>
+      <input type="text" id="telefono" required />
+      <button type="submit">Guardar</button>
+    </form>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      var ocupados = ["07","25","50","88"]; // Boletos ocupados de prueba
+      var seleccionados = [];
+      var grid = document.getElementById('boletos');
+
+      // Crear la cuadrícula de boletos
+      for (var i = 0; i < 100; i++) {
+        var num = (i < 10 ? '0' + i : '' + i);
+        var div = document.createElement('div');
+        div.innerText = num;
+        div.className = 'ticket';
+        if (ocupados.indexOf(num) !== -1) {
+          div.classList.add('taken');
+        } else {
+          div.classList.add('free');
+          (function(n, el){
+            el.addEventListener('click', function(){
+              var idx = seleccionados.indexOf(n);
+              if (idx !== -1) {
+                seleccionados.splice(idx,1);
+                el.classList.remove('selected');
+                el.classList.add('free');
+              } else {
+                seleccionados.push(n);
+                el.classList.remove('free');
+                el.classList.add('selected');
+              }
+              document.getElementById('reservarBtn').style.display = seleccionados.length > 0 ? 'inline-block' : 'none';
+            });
+          })(num, div);
+        }
+        grid.appendChild(div);
+      }
+
+      // Mostrar formulario al presionar reservar
+      document.getElementById('reservarBtn').addEventListener('click', function () {
+        document.getElementById('formulario').style.display = 'block';
+        document.getElementById('listaBoletos').innerText = seleccionados.join(', ');
+        document.getElementById('boletosSeleccionados').value = seleccionados.join(',');
+      });
+
+      // Enviar datos a Google Sheets
+      document.getElementById('reservaForm').addEventListener('submit', function(e){
+        e.preventDefault();
+        var boletos = document.getElementById('boletosSeleccionados').value;
+        var nombre = document.getElementById('nombre').value;
+        var tel = document.getElementById('telefono').value;
+
+        fetch('https://script.google.com/macros/s/AKfycbxWbgI5IcOqbGx7LPj5XtVj7e5-aVJ4Ft2pyhSg228mNvlVpxxlq-wk8CzqbGg7uhoT/exec', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ boletos: boletos, nombre: nombre, telefono: tel })
+        })
+        .then(res => res.text())
+        .then(data => {
+          alert('Boletos ' + boletos + ' reservados por ' + nombre + '. ✅ Datos guardados.');
+        })
+        .catch(err => {
+          console.error('Error al guardar:', err);
+          alert('Los boletos se reservaron, pero no se pudieron guardar en Google Sheets ❌');
+        });
+
+        this.reset();
+        seleccionados = [];
+        document.getElementById('formulario').style.display = 'none';
+        document.getElementById('reservarBtn').style.display = 'none';
+
+        // Marcar los boletos como ocupados en la cuadrícula
+        boletos.split(',').forEach(function(num){
+          var celdas = document.querySelectorAll('.ticket');
+          for (var i=0;i<celdas.length;i++){
+            if (celdas[i].innerText===num){
+              celdas[i].classList.remove('selected');
+              celdas[i].classList.add('taken');
+            }
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>
