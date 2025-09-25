@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Test Conexión Apps Script</title>
+</head>
+<body>
+  <h1>Prueba de conexión con Apps Script</h1>
+  <button id="btn">Enviar prueba</button>
+  <p id="resultado"></p>
+
+  <script>
+    document.getElementById('btn').addEventListener('click', function(){
+      fetch("https://script.google.com/macros/s/AKfycbxWbgI5IcOqbGx7LPj5XtVj7e5-aVJ4Ft2pyhSg228mNvlVpxxlq-wk8CzqbGg7uhoT/exec", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prueba: "hola" })
+      })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('resultado').textContent = "Respuesta: " + JSON.stringify(data);
+        console.log("Respuesta:", data);
+      })
+      .catch(err => {
+        document.getElementById('resultado').textContent = "Error en la conexión: " + err;
+        console.error("Error:", err);
+      });
+    });
+  </script>
+</body>
+</html>
